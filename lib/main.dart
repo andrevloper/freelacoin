@@ -12,6 +12,101 @@ import 'screens/order_screen.dart';
 import 'screens/clients_screen.dart';
 import 'screens/orders_screen.dart';
 
+// ── Splash Screen ─────────────────────────────────────
+class SplashScreen extends StatefulWidget {
+  const SplashScreen({super.key});
+  @override
+  State<SplashScreen> createState() => _SplashScreenState();
+}
+
+class _SplashScreenState extends State<SplashScreen>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _ctrl;
+  late final Animation<double> _fade;
+  late final Animation<double> _scale;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 700));
+    _fade  = CurvedAnimation(parent: _ctrl, curve: Curves.easeIn);
+    _scale = Tween<double>(begin: 0.85, end: 1.0)
+        .animate(CurvedAnimation(parent: _ctrl, curve: Curves.easeOutBack));
+    _ctrl.forward();
+
+    Future.delayed(const Duration(milliseconds: 2400), () {
+      if (!mounted) return;
+      Navigator.pushReplacement(
+        context,
+        PageRouteBuilder(
+          pageBuilder: (_, __, ___) => const _Shell(),
+          transitionsBuilder: (_, anim, __, child) =>
+              FadeTransition(opacity: anim, child: child),
+          transitionDuration: const Duration(milliseconds: 400),
+        ),
+      );
+    });
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => Scaffold(
+        backgroundColor: AppColors.primaryDark,
+        body: FadeTransition(
+          opacity: _fade,
+          child: Center(
+            child: ScaleTransition(
+              scale: _scale,
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    width: 108,
+                    height: 108,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(28),
+                      border: Border.all(
+                          color: Colors.white.withValues(alpha: 0.25),
+                          width: 2),
+                    ),
+                    child: const Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.monetization_on_rounded,
+                              color: Colors.white, size: 42),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 22),
+                  const Text('Freelacoin',
+                      style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 34,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: -1.0)),
+                  const SizedBox(height: 6),
+                  Text('Gestão financeira para freelancers',
+                      style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.65),
+                          fontSize: 14,
+                          fontWeight: FontWeight.w400)),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+}
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await initializeDateFormatting('pt_BR', null);
@@ -39,7 +134,7 @@ class FreelaCoinApp extends StatelessWidget {
         title: 'Freela Coin',
         theme: AppTheme.light,
         debugShowCheckedModeBanner: false,
-        home: const _Shell(),
+        home: const SplashScreen(),
       );
 }
 

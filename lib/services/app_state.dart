@@ -28,6 +28,7 @@ class AppState extends ChangeNotifier {
   String freelancerEmail   = '';
   String freelancerSpecialty = '';
   String freelancerCpf     = '';
+  double monthlyGoal       = 0.0;
 
   // ── Rascunho pendente ─────────────────────────────────
   String pendingTitle           = '';
@@ -213,12 +214,14 @@ class AppState extends ChangeNotifier {
     String? email,
     String? specialty,
     String? cpf,
+    double? monthlyGoalValue,
   }) {
-    if (name != null)      freelancerName      = name;
-    if (phone != null)     freelancerPhone     = phone;
-    if (email != null)     freelancerEmail     = email;
-    if (specialty != null) freelancerSpecialty = specialty;
-    if (cpf != null)       freelancerCpf       = cpf;
+    if (name != null)             freelancerName      = name;
+    if (phone != null)            freelancerPhone     = phone;
+    if (email != null)            freelancerEmail     = email;
+    if (specialty != null)        freelancerSpecialty = specialty;
+    if (cpf != null)              freelancerCpf       = cpf;
+    if (monthlyGoalValue != null) monthlyGoal         = monthlyGoalValue;
     _save();
     notifyListeners();
   }
@@ -305,6 +308,13 @@ class AppState extends ChangeNotifier {
       .where((p) => p.status == ProjectStatus.paid)
       .fold(0, (s, p) => s + p.total);
 
+  double getReceivedByMonth(int month, int year) => projects
+      .where((p) =>
+          p.status == ProjectStatus.paid &&
+          p.date.month == month &&
+          p.date.year == year)
+      .fold(0, (s, p) => s + p.total);
+
   double get pendingRevenue => projects
       .where((p) =>
           p.status != ProjectStatus.cancelled &&
@@ -322,6 +332,7 @@ class AppState extends ChangeNotifier {
     await p.setString('freelancerEmail',     freelancerEmail);
     await p.setString('freelancerSpecialty', freelancerSpecialty);
     await p.setString('freelancerCpf',       freelancerCpf);
+    await p.setDouble('monthlyGoal',         monthlyGoal);
   }
 
   Future<void> _load() async {
@@ -331,6 +342,7 @@ class AppState extends ChangeNotifier {
     freelancerEmail     = p.getString('freelancerEmail')     ?? '';
     freelancerSpecialty = p.getString('freelancerSpecialty') ?? '';
     freelancerCpf       = p.getString('freelancerCpf')       ?? '';
+    monthlyGoal         = p.getDouble('monthlyGoal')         ?? 0.0;
 
     final cj = p.getString('clients');
     if (cj != null) {

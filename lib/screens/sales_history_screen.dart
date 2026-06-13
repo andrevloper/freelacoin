@@ -556,6 +556,13 @@ class _ProjectHistoryTile extends StatelessWidget {
                 ])),
             const SizedBox(width: 8),
             Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
+              if (project.discountAmt > 0)
+                Text(fmtMoney(project.servicesTotal),
+                    style: const TextStyle(
+                        fontSize: 11,
+                        color: AppColors.textSecondary,
+                        decoration: TextDecoration.lineThrough,
+                        decorationColor: AppColors.textSecondary)),
               Text(fmtMoney(project.total),
                   style: const TextStyle(
                       fontWeight: FontWeight.w700,
@@ -591,39 +598,69 @@ class _SummaryCard extends StatelessWidget {
   const _SummaryCard({required this.projects, required this.total});
 
   @override
-  Widget build(BuildContext context) => AppCard(
-        color: AppColors.primaryLight,
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          const Text('Resumo do Período',
+  Widget build(BuildContext context) {
+    final paidProjects = projects.where((p) => p.status == ProjectStatus.paid);
+    final received     = paidProjects.fold<double>(0, (s, p) => s + p.total);
+
+    return AppCard(
+      color: AppColors.primaryLight,
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        const Text('Resumo do Período',
+            style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: AppColors.textPrimary)),
+        const SizedBox(height: 12),
+        _Row('Total de Projetos', '${projects.length}'),
+        const SizedBox(height: 8),
+        _Row('Pagos', '${paidProjects.length}'),
+        const SizedBox(height: 8),
+        _Row(
+            'Em andamento',
+            '${projects.where((p) => p.status == ProjectStatus.inProgress).length}'),
+        const Divider(height: 20),
+        Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+          const Text('Faturamento',
               style: TextStyle(
                   fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.textPrimary)),
-          const SizedBox(height: 12),
-          _Row('Total de Projetos', '${projects.length}'),
-          const SizedBox(height: 8),
-          _Row(
-              'Pagos',
-              '${projects.where((p) => p.status == ProjectStatus.paid).length}'),
-          const SizedBox(height: 8),
-          _Row(
-              'Em andamento',
-              '${projects.where((p) => p.status == ProjectStatus.inProgress).length}'),
-          const Divider(height: 20),
-          Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-            const Text('Faturamento',
-                style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.primary)),
-            Text(fmtMoney(total),
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.primary)),
+          Text(fmtMoney(total),
+              style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.primary)),
+        ]),
+        const SizedBox(height: 10),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          decoration: BoxDecoration(
+            color: AppColors.secondaryLight,
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+            const Row(mainAxisSize: MainAxisSize.min, children: [
+              Icon(Icons.check_circle_rounded,
+                  size: 16, color: AppColors.secondary),
+              SizedBox(width: 6),
+              Text('Recebido',
+                  style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.secondary)),
+            ]),
+            Text(fmtMoney(received),
                 style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w800,
-                    color: AppColors.primary)),
+                    color: AppColors.secondary)),
           ]),
-        ]),
-      );
+        ),
+      ]),
+    );
+  }
 }
 
 class _Row extends StatelessWidget {

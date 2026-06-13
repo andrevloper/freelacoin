@@ -89,9 +89,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
             p.date.day == _selected.day)
         .toList();
 
-    final recent    = dayProjects.take(5).toList();
-    final totalDay  = dayProjects.fold<double>(0, (s, p) => s + p.total);
+    final recent      = dayProjects.take(5).toList();
+    final totalDay    = dayProjects.fold<double>(0, (s, p) => s + p.total);
     final activeCount = state.activeProjectsCount;
+    final now         = DateTime.now();
+    final received    = state.getReceivedByMonth(now.month, now.year);
+    final goal        = state.monthlyGoal;
 
     return Scaffold(
       appBar: AppBar(
@@ -291,6 +294,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             icon: Icons.design_services_outlined,
                             color: AppColors.catConsult)),
                   ]),
+                  const SizedBox(height: 12),
+                  _MonthlyGoalCard(received: received, goal: goal),
                   const SizedBox(height: 24),
 
                   // Projetos do dia
@@ -336,6 +341,130 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 ]),
           ),
         ),
+      ]),
+    );
+  }
+}
+
+class _MonthlyGoalCard extends StatelessWidget {
+  final double received;
+  final double goal;
+  const _MonthlyGoalCard({required this.received, required this.goal});
+
+  @override
+  Widget build(BuildContext context) {
+    final hasGoal = goal > 0;
+    final progress = hasGoal ? (received / goal).clamp(0.0, 1.0) : 0.0;
+
+    final IconData statusIcon;
+    final Color statusColor;
+    final String statusText;
+
+    if (!hasGoal) {
+      statusIcon  = Icons.flag_outlined;
+      statusColor = AppColors.textSecondary;
+      statusText  = 'Meta não definida';
+    } else if (received < goal - 0.01) {
+      statusIcon  = Icons.trending_down_rounded;
+      statusColor = AppColors.accent;
+      statusText  = 'Abaixo da meta';
+    } else if (received > goal + 0.01) {
+      statusIcon  = Icons.trending_up_rounded;
+      statusColor = AppColors.secondary;
+      statusText  = 'Meta superada!';
+    } else {
+      statusIcon  = Icons.check_circle_rounded;
+      statusColor = AppColors.secondary;
+      statusText  = 'Meta atingida!';
+    }
+
+    return AppCard(
+      padding: const EdgeInsets.all(14),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Row(children: [
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+                color: statusColor.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(8)),
+            child: Icon(statusIcon, size: 18, color: statusColor),
+          ),
+          const SizedBox(width: 10),
+          const Text('Meta Mensal',
+              style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textPrimary)),
+          const Spacer(),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+            decoration: BoxDecoration(
+                color: statusColor.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(12)),
+            child: Row(mainAxisSize: MainAxisSize.min, children: [
+              Icon(statusIcon, size: 12, color: statusColor),
+              const SizedBox(width: 4),
+              Text(statusText,
+                  style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: statusColor)),
+            ]),
+          ),
+        ]),
+        const SizedBox(height: 12),
+        Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+          Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            const Text('Recebido',
+                style: TextStyle(fontSize: 11, color: AppColors.textSecondary)),
+            Text(fmtMoney(received),
+                style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    color: statusColor)),
+          ]),
+          if (hasGoal)
+            Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
+              const Text('Meta',
+                  style:
+                      TextStyle(fontSize: 11, color: AppColors.textSecondary)),
+              Text(fmtMoney(goal),
+                  style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.textPrimary)),
+            ]),
+        ]),
+        if (hasGoal) ...[
+          const SizedBox(height: 10),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(4),
+            child: LinearProgressIndicator(
+              value: progress,
+              minHeight: 6,
+              backgroundColor: AppColors.bg3,
+              color: statusColor,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+            Text('${(progress * 100).toStringAsFixed(0)}% da meta',
+                style: const TextStyle(
+                    fontSize: 11, color: AppColors.textSecondary)),
+            if (received < goal - 0.01)
+              Row(mainAxisSize: MainAxisSize.min, children: [
+                const Icon(Icons.arrow_upward_rounded,
+                    size: 11, color: AppColors.accent),
+                const SizedBox(width: 3),
+                Text('Faltam ${fmtMoney(goal - received)}',
+                    style: const TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.accent)),
+              ]),
+          ]),
+        ],
       ]),
     );
   }

@@ -208,6 +208,13 @@ class _ProjectCardState extends State<_ProjectCard> {
                   ])),
               const SizedBox(width: 4),
               Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
+                if (p.discountAmt > 0)
+                  Text(fmtMoney(p.servicesTotal),
+                      style: const TextStyle(
+                          fontSize: 11,
+                          color: AppColors.textSecondary,
+                          decoration: TextDecoration.lineThrough,
+                          decorationColor: AppColors.textSecondary)),
                 Text(fmtMoney(p.total),
                     style: const TextStyle(
                         fontWeight: FontWeight.w800,
@@ -290,27 +297,38 @@ class _ProjectCardState extends State<_ProjectCard> {
 
               // Financeiro
               const Divider(height: 16),
-              if (p.discountAmt > 0)
-                _financRow('Desconto',
-                    '− ${fmtMoney(p.discountAmt)}'),
+              if (p.discountAmt > 0) ...[
+                _financRow('Total serviços', fmtMoney(p.servicesTotal)),
+                _financRow('Desconto', '− ${fmtMoney(p.discountAmt)}'),
+              ],
               _financRow('Pagamento', p.paymentMethod.label),
               if (p.dueDate != null)
                 _financRow('Prazo',
                     DateFormat('dd/MM/yyyy', 'pt_BR').format(p.dueDate!)),
-              const SizedBox(height: 4),
-              Row(mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                const Text('Total',
-                    style: TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.textPrimary)),
-                Text(fmtMoney(p.total),
-                    style: const TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w800,
-                        color: AppColors.primary)),
-              ]),
+              const SizedBox(height: 6),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 12, vertical: 10),
+                decoration: BoxDecoration(
+                  color: AppColors.primaryLight,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                  Text(
+                      p.discountAmt > 0 ? 'A receber' : 'Total',
+                      style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.primary)),
+                  Text(fmtMoney(p.total),
+                      style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w800,
+                          color: AppColors.primary)),
+                ]),
+              ),
 
               if (p.notes.isNotEmpty) ...[
                 const SizedBox(height: 8),

@@ -17,22 +17,29 @@ class _SettingsScreenState extends State<SettingsScreen> {
   late final _email     = TextEditingController(text: context.read<AppState>().freelancerEmail);
   late final _specialty = TextEditingController(text: context.read<AppState>().freelancerSpecialty);
   late final _cpf       = TextEditingController(text: context.read<AppState>().freelancerCpf);
+  late final _goal      = TextEditingController(
+      text: context.read<AppState>().monthlyGoal > 0
+          ? context.read<AppState>().monthlyGoal.toStringAsFixed(2)
+          : '');
 
   @override
   void dispose() {
-    for (final c in [_name, _phone, _email, _specialty, _cpf]) {
+    for (final c in [_name, _phone, _email, _specialty, _cpf, _goal]) {
       c.dispose();
     }
     super.dispose();
   }
 
   void _save() {
+    final goalRaw  = _goal.text.trim().replaceAll(',', '.');
+    final goalValue = double.tryParse(goalRaw) ?? 0.0;
     context.read<AppState>().updateFreelancerInfo(
           name: _name.text.trim().isEmpty ? 'Meu Perfil' : _name.text.trim(),
           phone: _phone.text.trim(),
           email: _email.text.trim(),
           specialty: _specialty.text.trim(),
           cpf: _cpf.text.trim(),
+          monthlyGoalValue: goalValue,
         );
     showSnack(context, '✅ Perfil salvo!');
   }
@@ -104,6 +111,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     hint: 'seu@email.com',
                     controller: _email,
                     keyboardType: TextInputType.emailAddress),
+                const SizedBox(height: 12),
+
+                const SectionLabel('META MENSAL (R\$)'),
+                const SizedBox(height: 8),
+                AppTextField(
+                    hint: 'Ex: 5000.00',
+                    controller: _goal,
+                    prefix: 'R\$ ',
+                    keyboardType: const TextInputType.numberWithOptions(decimal: true)),
                 const SizedBox(height: 16),
 
                 PrimaryButton(

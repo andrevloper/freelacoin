@@ -21,6 +21,13 @@ class _OrderScreenState extends State<OrderScreen> {
   PaymentMethod _payment = PaymentMethod.pix;
   DateTime? _dueDate;
   bool _busy = false;
+  bool _discountIsPercent = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _discountCtrl.addListener(() => setState(() {}));
+  }
 
   @override
   void dispose() {
@@ -30,8 +37,32 @@ class _OrderScreenState extends State<OrderScreen> {
     super.dispose();
   }
 
-  double get _discount =>
-      double.tryParse(_discountCtrl.text.replaceAll(',', '.')) ?? 0;
+  double _computeDiscount(double subtotal) {
+    final val = double.tryParse(_discountCtrl.text.replaceAll(',', '.')) ?? 0;
+    if (_discountIsPercent) return (subtotal * val / 100).clamp(0.0, subtotal);
+    return val.clamp(0.0, subtotal);
+  }
+
+  Widget _discountToggle(String label, bool selected, VoidCallback onTap) =>
+      GestureDetector(
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 150),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 5),
+          decoration: BoxDecoration(
+            color: selected ? Colors.white : Colors.transparent,
+            borderRadius: BorderRadius.circular(6),
+            boxShadow: selected
+                ? [BoxShadow(color: Colors.black.withValues(alpha: 0.08), blurRadius: 4, offset: const Offset(0, 1))]
+                : null,
+          ),
+          child: Text(label,
+              style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                  color: selected ? AppColors.primary : AppColors.textSecondary)),
+        ),
+      );
 
   void _resetForm() => setState(() {
         _titleCtrl.clear();
@@ -40,6 +71,7 @@ class _OrderScreenState extends State<OrderScreen> {
         _client = null;
         _payment = PaymentMethod.pix;
         _dueDate = null;
+        _discountIsPercent = false;
       });
 
   void _loadPendingDraft() {
@@ -63,12 +95,13 @@ class _OrderScreenState extends State<OrderScreen> {
       return;
     }
     final title = _titleCtrl.text.trim();
+    final discountAmt = _computeDiscount(state.cartTotal);
     state.saveProject(
       title: title.isEmpty ? 'Projeto sem título' : title,
       client: _client,
       notes: _notesCtrl.text,
       paymentMethod: _payment,
-      discount: _discount > 0 ? _discount : null,
+      discount: discountAmt > 0 ? discountAmt : null,
       dueDate: _dueDate,
       status: ProjectStatus.pending,
     );
@@ -103,12 +136,13 @@ class _OrderScreenState extends State<OrderScreen> {
 
     setState(() => _busy = true);
     try {
+      final discountAmt = _computeDiscount(state.cartTotal);
       state.saveProject(
         title: title,
         client: _client,
         notes: _notesCtrl.text,
         paymentMethod: _payment,
-        discount: _discount > 0 ? _discount : null,
+        discount: discountAmt > 0 ? discountAmt : null,
         dueDate: _dueDate,
         status: ProjectStatus.inProgress,
       );
@@ -132,7 +166,8 @@ class _OrderScreenState extends State<OrderScreen> {
 
     final items = state.cartItems;
     final subtotal = state.cartTotal;
-    final total = subtotal - _discount;
+    final discountAmt = _computeDiscount(subtotal);
+    final total = subtotal - discountAmt;
 
     return Scaffold(
       appBar: AppBar(
@@ -398,12 +433,53 @@ class _OrderScreenState extends State<OrderScreen> {
                     child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                      const SectionLabel('DESCONTO'),
+                      Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const SectionLabel('DESCONTO'),
+                            Container(
+                              padding: const EdgeInsets.all(3),
+                              decoration: BoxDecoration(
+                                  color: AppColors.bg3,
+                                  borderRadius: BorderRadius.circular(8)),
+                              child: Row(mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                _discountToggle('R\$', !_discountIsPercent,
+                                    () => setState(() {
+                                          _discountIsPercent = false;
+                                          _discountCtrl.clear();
+                                        })),
+                                _discountToggle('%', _discountIsPercent,
+                                    () => setState(() {
+                                          _discountIsPercent = true;
+                                          _discountCtrl.clear();
+                                        })),
+                              ]),
+                            ),
+                          ]),
                       const SizedBox(height: 10),
                       AppTextField(
-                          label: 'Desconto (R\$)',
-                          controller: _discountCtrl,
-                          keyboardType: TextInputType.number),
+                        hint: _discountIsPercent ? 'Ex: 10' : 'Ex: 150.00',
+                        controller: _discountCtrl,
+                        prefix: _discountIsPercent ? null : 'R\$ ',
+                        suffix: _discountIsPercent
+                            ? const Padding(
+                                padding: EdgeInsets.only(right: 12),
+                                child: Icon(Icons.percent_rounded,
+                                    size: 18,
+                                    color: AppColors.textSecondary))
+                            : null,
+                        keyboardType: const TextInputType.numberWithOptions(
+                            decimal: true),
+                      ),
+                      if (_discountIsPercent && discountAmt > 0) ...[
+                        const SizedBox(height: 6),
+                        Text(
+                          '= ${fmtMoney(discountAmt)} de desconto',
+                          style: const TextStyle(
+                              fontSize: 12, color: AppColors.textSecondary),
+                        ),
+                      ],
                     ])),
                 const SizedBox(height: 12),
 
